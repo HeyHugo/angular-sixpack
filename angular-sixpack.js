@@ -54,9 +54,9 @@
         var _getOrInitSession = function () {
           if (!_session) {
             if (_clientId = $cookies[_cookiePrefix + 'clientId']) {
-              _session = new sp.Session(_clientId, _opts.baseUrl);
+              _session = new sp.Session({client_id: _clientId, base_url: _opts.baseUrl});
             } else {
-              _session = new sp.Session(undefined, _opts.baseUrl);
+              _session = new sp.Session({base_url: _opts.baseUrl});
               $cookies[_cookiePrefix + 'clientId'] = _clientId = _session.client_id;
             }
             if (_opts.debug) {
@@ -120,7 +120,11 @@
           },
           // Register a 'conversion'. If no testName, will call for all active tests
           // Takes an optional callback that receives the raw response from sixpack (or undefined on error)
-          convert : function (testName, callback) {
+          convert : function (testName, kpi, callback) {
+            if (typeof kpi === "function") {
+              callback = kpi;
+              kpi = null;
+            }
             var session = _getOrInitSession();
             if (!testName) {
               if (_opts.debug) {
@@ -150,7 +154,7 @@
               if (_opts.debug) {
                 $log.info("[sixpack] Recording conversion for", testName);
               };
-              session.convert(testName, function (err, res) {
+              session.convert(testName, kpi, function (err, res) {
                 if (err && _opts.debug) {
                   $log.warn('[sixpack] Error recording conversion:', err);
                 } else if (_opts.debug) {
@@ -260,11 +264,12 @@
     .directive('sixpackConvert', ['sixpack', function (sixpack) {
       return {
         link : function ($scope, $element, $attrs) {
-          var test = $attrs.sixpackConvert || undefined
-            , eventType = $attrs.on || 'click';
+          var test = $attrs.sixpackConvert || undefined,
+              kpi = $attrs.sixpackKpi || undefined,
+              eventType = $attrs.on || 'click';
 
           $element.on(eventType, function () {
-            sixpack.convert(test);
+            sixpack.convert(test, kpi);
           });
         }
       }
